@@ -1,0 +1,153 @@
+---
+// src/components/Services.astro
+const services = [
+    {
+        num: "01",
+        name: "Custom Website Development",
+        desc: "Fast, modern personal and company websites designed to build a strong online presence and attract more customers.",
+    },
+    {
+        num: "02",
+        name: "Business Systems & Portals",
+        desc: "Custom web applications, client portals, and online tools that help growing businesses manage operations smoothly.",
+    },
+    {
+        num: "03",
+        name: "Website Optimization & Speed",
+        desc: "Speed up slow websites, improve mobile responsiveness, and fix technical bugs so visitors enjoy a seamless experience.",
+    },
+    {
+        num: "04",
+        name: "Data Operations & Virtual Support",
+        desc: "Accurate data entry, spreadsheet management, appointment scheduling, and organized digital document tracking.",
+    },
+];
+---
+
+<section
+    id="services"
+    class="relative bg-white text-black px-6 py-24 md:px-16 md:py-32 border-t border-neutral-200"
+>
+    <span
+        data-services-el
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-10"
+    >
+        02 / services
+    </span>
+
+    <div>
+        {
+            services.map((s) => (
+                <div
+                    data-services-row
+                    class="group relative flex flex-col md:flex-row md:items-center gap-2 md:gap-8 py-6 border-b border-neutral-200 cursor-default"
+                >
+                    <span class="font-mono text-xs text-neutral-400 md:w-10 shrink-0">
+                        {s.num}
+                    </span>
+
+                    <span class="text-2xl md:text-4xl tracking-tight md:w-[45%] shrink-0">
+                        {s.name}
+                    </span>
+
+                    <span class="text-sm text-neutral-500 md:ml-auto max-w-xs md:text-right">
+                        {s.desc}
+                    </span>
+
+                    <span
+                        data-services-arrow
+                        class="hidden md:inline-block text-lg opacity-0 -translate-x-2"
+                        aria-hidden="true"
+                    >
+                        ↗
+                    </span>
+
+                    <span
+                        data-services-line
+                        class="absolute left-0 bottom-0 h-px w-full bg-black origin-left scale-x-0"
+                    />
+                </div>
+            ))
+        }
+    </div>
+</section>
+
+<script>
+    import { gsap } from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const section = document.querySelector("#services");
+    const label = section?.querySelector<HTMLElement>("[data-services-el]");
+    const rows = section
+        ? gsap.utils.toArray<HTMLElement>("[data-services-row]", section)
+        : [];
+
+    if (prefersReducedMotion || rows.length === 0) {
+        gsap.set([label, ...rows], { opacity: 1, y: 0 });
+    } else {
+        gsap.set(rows, { opacity: 0, y: 16 });
+
+        gsap.to(rows, {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power3.out",
+            scrollTrigger: {
+                trigger: section,
+                start: "top 75%",
+                once: true,
+            },
+        });
+
+        // per-row hover underline + arrow, using quickTo for smooth in/out
+        rows.forEach((row) => {
+            const line = row.querySelector<HTMLElement>("[data-services-line]");
+            const arrow = row.querySelector<HTMLElement>(
+                "[data-services-arrow]",
+            );
+            if (!line) return;
+
+            const lineIn = gsap.quickTo(line, "scaleX", {
+                duration: 0.35,
+                ease: "power2.out",
+            });
+            const arrowOpacity = arrow
+                ? gsap.quickTo(arrow, "opacity", {
+                      duration: 0.3,
+                      ease: "power2.out",
+                  })
+                : null;
+            const arrowX = arrow
+                ? gsap.quickTo(arrow, "x", {
+                      duration: 0.35,
+                      ease: "power2.out",
+                  })
+                : null;
+
+            row.addEventListener("mouseenter", () => {
+                lineIn(1);
+                arrowOpacity?.(1);
+                arrowX?.(0);
+            });
+
+            row.addEventListener("mouseleave", () => {
+                lineIn(0);
+                arrowOpacity?.(0);
+                arrowX?.(-8);
+            });
+        });
+    }
+</script>
+
+<style>
+    [data-services-el] {
+        opacity: 1;
+    }
+</style>
