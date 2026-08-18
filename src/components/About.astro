@@ -1,0 +1,116 @@
+---
+// src/components/About.astro
+const facts = [
+    { label: "location", value: "Bacolod City, Philippines" },
+    { label: "role", value: "Web Developer, Data Entry Specialist" },
+    { label: "focus", value: "Web Design, System Design, Data Entry" },
+    { label: "currently", value: "Open to freelance work" },
+];
+---
+
+<section
+    id="about"
+    class="relative bg-white text-black px-6 py-24 md:px-16 md:py-32 border-t border-neutral-200"
+>
+    <span
+        data-about-el
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-10"
+    >
+        01 / about
+    </span>
+
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
+        <!-- Default to black for graceful JS-disabled fallback -->
+        <p
+            data-about-copy
+            class="text-2xl md:text-4xl leading-tight tracking-tight max-w-2xl text-black"
+        >
+            I'm a front-end developer who treats motion as a material, not a
+            garnish. My work sits at the intersection of clean systems and
+            considered detail — interfaces that feel fast, deliberate, and a
+            little alive without ever getting in the user's way.
+        </p>
+
+        <dl
+            class="font-mono text-sm space-y-5 md:pt-2 md:pl-8 md:border-l md:border-neutral-200"
+        >
+            {
+                facts.map((f) => (
+                    <div
+                        data-about-el
+                        class="flex justify-between gap-4 border-b border-neutral-100 pb-3"
+                    >
+                        <dt class="text-neutral-400">{f.label}</dt>
+                        <dd class="text-right text-neutral-800">{f.value}</dd>
+                    </div>
+                ))
+            }
+        </dl>
+    </div>
+</section>
+
+<script>
+    import { gsap } from "gsap";
+    import { SplitText } from "gsap/SplitText";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+    gsap.registerPlugin(SplitText, ScrollTrigger);
+
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const section = document.querySelector<HTMLElement>("#about");
+    const copy = section?.querySelector<HTMLElement>("[data-about-copy]");
+    const facts = section
+        ? gsap.utils.toArray<HTMLElement>("[data-about-el]", section)
+        : [];
+
+    if (prefersReducedMotion || !copy) {
+        // If reduced motion or no JS, ensure everything is visible and black
+        gsap.set([copy, ...facts], { opacity: 1, y: 0, color: "#000000" });
+    } else {
+        // 1. Split the paragraph into individual characters
+        const split = SplitText.create(copy, {
+            type: "chars",
+        });
+
+        // 2. Set initial state: ONLY change the color to gray. No y or opacity changes.
+        gsap.set(split.chars, { color: "#a3a3a3" }); // Tailwind neutral-400
+        gsap.set(facts, { opacity: 0, y: 12 });
+
+        // 3. Create timeline tied to scroll for the text color
+        gsap.to(split.chars, {
+            color: "#000000", // Animate to black
+            stagger: 0.015, // Tighter stagger for a smooth "reading" highlight feel
+            ease: "none", // Linear progression matches scroll wheel 1:1
+            scrollTrigger: {
+                trigger: copy, // Trigger based on the paragraph itself
+                start: "top 80%", // Start when top of text hits 80% of viewport height
+                end: "bottom 60%", // End when bottom of text hits 60% of viewport height
+                scrub: 1, // Smoothly ties animation progress to scrollbar (1s smoothing)
+            },
+        });
+
+        // 4. Keep the facts sliding up nicely as the section comes into view
+        gsap.to(facts, {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power3.out",
+            scrollTrigger: {
+                trigger: section,
+                start: "top 75%",
+                once: true,
+            },
+        });
+    }
+</script>
+
+<style>
+    /* Fallback: If JS fails or is disabled, text remains black and readable */
+    [data-about-copy] {
+        color: #000000;
+    }
+</style>

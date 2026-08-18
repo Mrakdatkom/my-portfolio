@@ -87,20 +87,28 @@ const sections = [
             </div>
         </div>
     </div>
-
-    <!-- hairline that scales in on load, anchored to bottom -->
-    <div
-        data-hero-rule
-        class="absolute bottom-0 left-0 h-px w-full bg-neutral-200 origin-left scale-x-0 z-20"
-    >
-    </div>
 </header>
 
 <script>
     import { gsap } from "gsap";
     import { SplitText } from "gsap/SplitText";
+    gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
+
+    let smoother = ScrollSmoother.create({
+        wrapper: "#smooth-wrapper",
+        content: "#smooth-content",
+        smooth: 2,
+        effects: true,
+    });
 
     gsap.registerPlugin(SplitText);
+
+    const button = document.querySelector<HTMLElement>("#about");
+
+    button?.addEventListener("click", (event) => {
+        event.preventDefault();
+        smoother.scrollTo("#about", true, "center center");
+    });
 
     // respect reduced motion preference
     const prefersReducedMotion = window.matchMedia(
