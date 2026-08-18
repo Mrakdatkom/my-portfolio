@@ -1,0 +1,182 @@
+---
+// src/components/Hero.astro
+import profile from "../assets/profile.jpg";
+import { Image } from "astro:assets";
+
+const sections = [
+    { id: "hero", num: "00", label: "hero" },
+    { id: "about", num: "01", label: "about" },
+    { id: "services", num: "02", label: "services" },
+    { id: "skills", num: "03", label: "skills" },
+    { id: "work", num: "04", label: "work" },
+];
+---
+
+<header
+    id="hero"
+    class="relative min-h-screen bg-white text-black overflow-hidden flex flex-col px-6 py-8 md:px-16 md:py-10"
+>
+    <!-- top bar -->
+    <div class="flex items-center justify-between z-30 relative">
+        <span class="text-sm font-medium tracking-tight" data-hero-el>
+            @hxsdmrak
+        </span>
+
+        <nav
+            class="hidden md:flex gap-6 font-mono text-[11px] tracking-wide text-neutral-500"
+        >
+            {
+                sections.map((s) => (
+                    <a
+                        href={`#${s.id}`}
+                        data-hero-el
+                        class="hover:text-black transition-colors duration-200 aria-[current=page]:text-black"
+                        aria-current={s.id === "hero" ? "page" : undefined}
+                    >
+                        {s.num} {s.label}
+                    </a>
+                ))
+            }
+        </nav>
+    </div>
+
+    <!-- centered portrait in background -->
+    <div
+        class="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style="top: 20%;"
+    >
+        <div
+            data-hero-portrait
+            class="relative w-full max-w-3xl h-[120vh] md:h-[130vh] flex items-center justify-center"
+            style="mask-image: linear-gradient(to bottom, black 30%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);"
+        >
+            <Image
+                src={profile}
+                alt="Portrait of Mark Ryan Zipagan"
+                class="h-full w-auto object-contain grayscale contrast-110 opacity-90"
+                widths={[400, 600, 816, 1024, 1200]}
+                sizes="(min-width: 768px) 70vw, 100vw"
+            />
+        </div>
+    </div>
+
+    <!-- text content at bottom -->
+    <div class="relative z-20 mt-auto mb-8 md:mb-12">
+        <div
+            class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-8"
+        >
+            <!-- left side: name and subtitle -->
+            <div class="max-w-xl">
+                <h1
+                    data-hero-headline
+                    class="font-medium leading-[0.95] tracking-tight text-[10vw] sm:text-6xl md:text-7xl lg:text-8xl"
+                >
+                    Mark Ryan<br />Zipagan
+                </h1>
+            </div>
+
+            <!-- right side: description -->
+            <div class="max-w-sm md:max-w-md md:text-right">
+                <p
+                    data-hero-el
+                    class="text-[15px] leading-relaxed text-neutral-600"
+                >
+                    I build fast, motion-driven interfaces where every animation
+                    earns its place.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- hairline that scales in on load, anchored to bottom -->
+    <div
+        data-hero-rule
+        class="absolute bottom-0 left-0 h-px w-full bg-neutral-200 origin-left scale-x-0 z-20"
+    >
+    </div>
+</header>
+
+<script>
+    import { gsap } from "gsap";
+    import { SplitText } from "gsap/SplitText";
+
+    gsap.registerPlugin(SplitText);
+
+    // respect reduced motion preference
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const headline = document.querySelector<HTMLElement>(
+        "[data-hero-headline]",
+    );
+    const els = gsap.utils.toArray<HTMLElement>("[data-hero-el]");
+    const rule = document.querySelector("[data-hero-rule]");
+    const portrait = document.querySelector("[data-hero-portrait]");
+
+    if (prefersReducedMotion || !headline) {
+        gsap.set([headline, ...els, rule, portrait], {
+            opacity: 1,
+            scaleX: 1,
+            scale: 1,
+            y: 0,
+        });
+    } else {
+        // mask: "lines" auto-wraps each line in an overflow-hidden div,
+        // so words slide up from a clean clipped edge rather than fading in place
+        const split = SplitText.create(headline, {
+            type: "words",
+            mask: "lines",
+            autoSplit: true,
+        });
+
+        // starting state, set before the timeline runs
+        gsap.set(els, { opacity: 0, y: 12 });
+        gsap.set(portrait, { opacity: 0, scale: 1.04, y: 16 });
+
+        const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+        tl.from(split.words, {
+            yPercent: 110,
+            duration: 0.9,
+            stagger: 0.045,
+        })
+            .to(
+                portrait,
+                {
+                    opacity: 0.9,
+                    scale: 1,
+                    y: 0,
+                    duration: 1.1,
+                    ease: "power2.out",
+                },
+                "-=0.7",
+            )
+            .to(
+                els,
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    stagger: 0.06,
+                },
+                "-=0.9",
+            )
+            .to(
+                rule,
+                {
+                    scaleX: 1,
+                    duration: 0.8,
+                    ease: "power2.out",
+                },
+                "-=0.3",
+            );
+    }
+</script>
+
+<style>
+    /* fallback so content isn't invisible if JS fails to load */
+    [data-hero-el] {
+        opacity: 1;
+    }
+</style>
