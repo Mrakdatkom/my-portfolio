@@ -1,0 +1,190 @@
+---
+// src/components/Testimonials.astro
+const testimonials = [
+    {
+        quote: "Mark took a vague idea and turned it into something that felt considered down to the last detail. Communication was clear the entire way through.",
+        name: "Jane Doe",
+        role: "Product Lead, Company Name",
+    },
+    {
+        quote: "The attention to motion and detail set this apart from anything else we'd seen. It genuinely felt like working with someone who cared about the craft.",
+        name: "John Smith",
+        role: "Founder, Studio Name",
+    },
+    {
+        quote: "Fast, communicative, and the final build performed better than we expected on every metric we tracked.",
+        name: "Alex Reyes",
+        role: "Marketing Director, Company Name",
+    },
+];
+---
+
+<section
+    id="testimonials"
+    class="relative bg-white text-black px-6 py-24 md:px-16 md:py-32 border-t border-neutral-200"
+>
+    <span
+        data-testi-el
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14"
+    >
+        06 / testimonials
+    </span>
+
+    <div class="relative max-w-3xl min-h-55 md:min-h-45">
+        {
+            testimonials.map((t, i) => (
+                <div
+                    data-testi-slide
+                    class="absolute inset-0"
+                    style={i === 0 ? "" : "opacity:0; visibility:hidden;"}
+                >
+                    <p class="text-2xl md:text-4xl leading-[1.3] tracking-tight">
+                        “{t.quote}”
+                    </p>
+                    <div class="mt-6 font-mono text-xs text-neutral-400">
+                        {t.name} — {t.role}
+                    </div>
+                </div>
+            ))
+        }
+    </div>
+
+    <div class="flex gap-4 mt-10 md:mt-4">
+        {
+            testimonials.map((_, i) => (
+                <button
+                    data-testi-dot
+                    data-index={i}
+                    class="font-mono text-xs text-neutral-300 aria-current:text-black transition-colors duration-200"
+                    aria-current={i === 0 ? "true" : "false"}
+                    aria-label={`Show testimonial ${i + 1}`}
+                >
+                    {String(i + 1).padStart(2, "0")}
+                </button>
+            ))
+        }
+    </div>
+</section>
+
+<script>
+    import { gsap } from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const section = document.querySelector("#testimonials");
+    const label = section?.querySelector<HTMLElement>("[data-testi-el]");
+    const slides = section
+        ? gsap.utils.toArray<HTMLElement>("[data-testi-slide]", section)
+        : [];
+    const dots = section
+        ? gsap.utils.toArray<HTMLButtonElement>("[data-testi-dot]", section)
+        : [];
+
+    if (label) {
+        gsap.set(label, {
+            opacity: prefersReducedMotion ? 1 : 0,
+            y: prefersReducedMotion ? 0 : 12,
+        });
+        if (!prefersReducedMotion) {
+            gsap.to(label, {
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 85%",
+                    once: true,
+                },
+            });
+        }
+    }
+
+    let current = 0;
+    let autoplay: gsap.core.Tween | ReturnType<typeof setInterval> | null =
+        null;
+    const AUTOPLAY_MS = 6000;
+
+    function setDots(index: number) {
+        dots.forEach((d, i) =>
+            d.setAttribute("aria-current", String(i === index)),
+        );
+    }
+
+    function goTo(index: number) {
+        if (index === current || !slides[current] || !slides[index]) return;
+
+        const outgoing = slides[current];
+        const incoming = slides[index];
+
+        if (prefersReducedMotion) {
+            gsap.set(outgoing, { opacity: 0, visibility: "hidden" });
+            gsap.set(incoming, { opacity: 1, visibility: "visible" });
+        } else {
+            gsap.to(outgoing, {
+                opacity: 0,
+                y: -14,
+                duration: 0.4,
+                ease: "power2.in",
+                onComplete: () => gsap.set(outgoing, { visibility: "hidden" }),
+            });
+
+            gsap.set(incoming, { visibility: "visible", opacity: 0, y: 14 });
+            gsap.to(incoming, {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                delay: 0.15,
+                ease: "power3.out",
+            });
+        }
+
+        current = index;
+        setDots(current);
+    }
+
+    dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+            const idx = Number(dot.dataset.index);
+            goTo(idx);
+            resetAutoplay();
+        });
+    });
+
+    function startAutoplay() {
+        if (prefersReducedMotion || slides.length < 2) return;
+        autoplay = setInterval(() => {
+            goTo((current + 1) % slides.length);
+        }, AUTOPLAY_MS);
+    }
+
+    function stopAutoplay() {
+        if (autoplay) clearInterval(autoplay as ReturnType<typeof setInterval>);
+        autoplay = null;
+    }
+
+    function resetAutoplay() {
+        stopAutoplay();
+        startAutoplay();
+    }
+
+    if (section) {
+        section.addEventListener("mouseenter", stopAutoplay);
+        section.addEventListener("mouseleave", startAutoplay);
+        section.addEventListener("focusin", stopAutoplay);
+        section.addEventListener("focusout", startAutoplay);
+    }
+
+    startAutoplay();
+</script>
+
+<style>
+    [data-testi-el] {
+        opacity: 1;
+    }
+</style>
