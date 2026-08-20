@@ -1,0 +1,193 @@
+---
+// src/components/Projects.astro
+import { Image } from "astro:assets";
+
+import iprocess from "../assets/projects/iprocess.png";
+import npo from "../assets/projects/npo.jpeg";
+import warlen from "../assets/projects/warlen.png";
+import neo from "../assets/projects/neo.png";
+
+const projects = [
+    {
+        title: "iProcess",
+        year: "Jun 2026",
+        tags: ["Tailwind", "GSAP", "+3 more"],
+        desc: "A streamlined workflow automation platform designed to optimize internal business processes, featuring smooth, motion-driven interactions for a seamless user experience.",
+        url: "https://www.iprocessph.com",
+        image: iprocess,
+    },
+    {
+        title: "NPO Monitoring Tool",
+        year: "Aug 2025",
+        tags: ["React", "Laravel", "Tailwind", "+1 more"],
+        desc: "A comprehensive management dashboard for non-profit organizations, enabling efficient volunteer coordination, donation tracking, and resource allocation.",
+        // <-- No 'url' property, so the link will be hidden
+        image: npo,
+    },
+    {
+        title: "Warlen Industrial Sales Corporation",
+        year: "Feb 2026",
+        tags: ["Typescript", "Laravel", "+4 more"],
+        desc: "A high-performance digital storefront with fluid page transitions and refined micro-interactions, built to maximize user engagement and conversion rates.",
+        // <-- No 'url' property, so the link will be hidden
+        image: warlen,
+    },
+    {
+        title: "Neo Creatives",
+        year: "Jul 2026",
+        tags: ["Astro", "Vercel", "+3 more"],
+        desc: "A modern, real-time collaborative workspace application with robust backend infrastructure, ensuring fast and reliable data synchronization.",
+        url: "https://www.neo-creatives.com",
+        image: neo,
+    },
+];
+---
+
+<section
+    id="projects"
+    class="relative bg-white text-black px-6 py-24 md:px-16 md:py-32 border-t border-neutral-200"
+>
+    <span
+        data-projects-el
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14 text-center md:text-left"
+    >
+        05 / projects
+    </span>
+
+    <!-- Centered 2x2 Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-16 max-w-5xl mx-auto">
+        {
+            projects.map((p) => (
+                <article
+                    data-project-card
+                    class="flex flex-col"
+                >
+                    <!-- Landscape Image Container -->
+                    <div class="relative w-full max-w-xl mx-auto mb-6">
+                        <!-- Only render the <a> wrapper if p.url exists -->
+                        {p.url ? (
+                            <a
+                                href={p.url}
+                                class="relative block w-full aspect-video border border-neutral-200 overflow-hidden bg-neutral-50"
+                                aria-label={`View ${p.title}`}
+                            >
+                                <Image
+                                    src={p.image}
+                                    alt={p.title}
+                                    class="w-full h-full object-cover"
+                                    widths={[400, 600, 800, 1000]}
+                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                />
+                            </a>
+                        ) : (
+                            <div class="relative block w-full aspect-video border border-neutral-200 overflow-hidden bg-neutral-50">
+                                <Image
+                                    src={p.image}
+                                    alt={p.title}
+                                    class="w-full h-full object-cover"
+                                    widths={[400, 600, 800, 1000]}
+                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex flex-col text-center md:text-left">
+                        <div class="flex items-center justify-center md:justify-start mb-3">
+                            <span class="font-mono text-[11px] tracking-widest text-neutral-400 uppercase">
+                                — {p.year}
+                            </span>
+                        </div>
+                        
+                        <h3 class="text-2xl md:text-3xl font-semibold tracking-tight text-black mb-3">
+                            {p.title}
+                        </h3>
+                        
+                        <p class="text-[15px] text-neutral-500 leading-relaxed mb-5 max-w-md mx-auto md:mx-0">
+                            {p.desc}
+                        </p>
+
+                        <div class="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
+                            {p.tags.map((t) => (
+                                <span class="font-mono text-[11px] text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-md border border-neutral-200">
+                                    {t}
+                                </span>
+                            ))}
+                        </div>
+
+                        {p.url && (
+                            <a
+                                href={p.url}
+                                target="_blank"
+                                class="inline-flex items-center gap-2 text-sm font-medium text-black border-b border-black pb-0.5 w-max mx-auto md:mx-0"
+                            >
+                                View project 
+                                <span aria-hidden="true">↗</span>
+                            </a>
+                        )}
+                    </div>
+                </article>
+            ))
+        }
+    </div>
+</section>
+
+<script>
+    import { gsap } from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const section = document.querySelector<HTMLElement>("#projects");
+    const label = section?.querySelector<HTMLElement>("[data-projects-el]");
+    const cards = section
+        ? gsap.utils.toArray<HTMLElement>("[data-project-card]", section)
+        : [];
+
+    if (prefersReducedMotion || cards.length === 0) {
+        gsap.set([label, ...cards], { opacity: 1, y: 0 });
+    } else {
+        if (label) {
+            gsap.set(label, { opacity: 0, y: 12 });
+        }
+        gsap.set(cards, { opacity: 0, y: 30 });
+
+        if(label) {
+            gsap.to(label, {
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 85%",
+                    once: true,
+                },
+            });
+        }
+
+        gsap.to(cards, {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            stagger: 0.15,
+            ease: "power3.out",
+            scrollTrigger: {
+                trigger: section,
+                start: "top 75%",
+                once: true,
+            },
+        });
+    }
+</script>
+
+<style>
+    [data-projects-el] {
+        opacity: 1;
+    }
+</style>
