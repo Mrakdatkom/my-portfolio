@@ -25,7 +25,6 @@ import mysql from "../assets/skills/mysql.svg";
 import php from "../assets/skills/php.svg";
 import bootstrap from "../assets/skills/bootstrap.svg";
 import css from "../assets/skills/css.svg";
-
 import vscode from "../assets/skills/vscode.svg";
 import wordpress from "../assets/skills/wordpress.svg";
 
@@ -68,7 +67,6 @@ const skillCategories = [
             { name: "Google Calendar", icon: googlecalendar },
             { name: "Visual Studio Code", icon: vscode },
             { name: "WordPress", icon: wordpress },
-
         ],
     },
 ];
@@ -173,15 +171,20 @@ function getHeightLevel(count: number, max: number) {
 }
 
 const maxCount = Math.max(...weeks.flat().map((d) => d.count), 1);
-const heightScale = ["h-1", "h-2", "h-4", "h-6", "h-8"];
 const opacityScale = [0.15, 0.3, 0.5, 0.75, 1];
 
+// 1. Define a stric 3-letter month array
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// 2. Use the array to guarantee exactly 3 letters
 const monthLabels = weeks.map((week, i) => {
     if (!week[0]?.date) return "";
     const date = new Date(week[0].date);
     const prevDate = i > 0 && weeks[i - 1][0]?.date ? new Date(weeks[i - 1][0].date) : null;
     const isNewMonth = !prevDate || date.getMonth() !== prevDate.getMonth();
-    return isNewMonth ? date.toLocaleString("en-US", { month: "short" }) : "";
+    
+    // Return the 3-letter string from our array, or empty string
+    return isNewMonth ? monthNames[date.getMonth()] : "";
 });
 ---
 
@@ -207,7 +210,7 @@ const monthLabels = weeks.map((week, i) => {
                         {category.title}
                     </h3>
 
-                    <!-- Badges Container (Centered on mobile, left-aligned on desktop) -->
+                    <!-- Badges Container -->
                     <div class="flex flex-wrap gap-3 justify-center md:justify-start">
                         {
                             category.skills.map((skill) => {
@@ -232,7 +235,7 @@ const monthLabels = weeks.map((week, i) => {
     <!-- Visual Divider -->
     <div class="max-w-4xl mx-auto border-t border-neutral-200 mb-24 md:mb-32"></div>
 
-    <!-- PART 2: ACTIVITY GRAPH (Perfectly Centered) -->
+    <!-- PART 2: ACTIVITY GRAPH -->
     <div id="activity" class="flex flex-col items-center w-full">
         <span
             data-activity-el
@@ -253,69 +256,116 @@ const monthLabels = weeks.map((week, i) => {
             </a>
         </div>
 
-        <div data-activity-grid-wrap class="w-full max-w-3xl overflow-x-auto flex justify-center">
-            <div class="min-w-175 w-full">
-                <!-- Month Labels -->
-                <div
-                    class="grid mb-2"
-                    style={`grid-template-columns: repeat(${weeks.length}, 1fr); gap: 2px;`}
-                >
-                    {
-                        monthLabels.map((label) => (
-                            <span class="font-mono text-[9px] text-neutral-400 h-3 text-center">
-                                {label}
-                            </span>
-                        ))
-                    }
-                </div>
-
-                <!-- Soundwave Grid -->
-                <div
-                    data-activity-grid
-                    class="grid items-end"
-                    style={`grid-template-rows: 2rem; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 2px;`}
-                >
-                    {
-                        weeks.map((week) =>
-                            week.map((day) => {
-                                const level = getHeightLevel(day.count, maxCount);
-                                return (
-                                    <div
-                                        data-activity-bar
-                                        data-level={level}
-                                        class={`w-full rounded-t-sm ${heightScale[level]}`}
-                                        style={{
-                                            backgroundColor: `rgba(0, 0, 0, ${opacityScale[level]})`,
-                                            transformOrigin: "bottom",
-                                        }}
-                                        title={
-                                            day.date
-                                                ? `${day.count} combined contributions on ${day.date}`
-                                                : undefined
-                                        }
-                                    />
-                                );
-                            }),
-                        )
-                    }
-                </div>
-
-                <!-- Legend -->
-                <div class="flex items-center justify-center gap-3 mt-6 font-mono text-[10px] text-neutral-400">
-                    <span>less</span>
-                    <div class="flex items-end gap-2 h-8">
-                        {
-                            opacityScale.map((op, i) => (
-                                <div
-                                    class={`w-1.5 rounded-t-sm ${heightScale[i]}`}
-                                    style={{ backgroundColor: `rgba(0, 0, 0, ${op})` }}
-                                />
-                            ))
-                        }
-                    </div>
-                    <span>more</span>
-                </div>
+        <div class="sm:hidden flex flex-col items-center w-full px-4">
+            <!-- Month Labels for Mobile -->
+            <div class="grid mb-1 w-full max-w-md" style="grid-template-columns: repeat(26, 1fr); gap: 2px;">
+                {
+                    monthLabels.slice(-26).map((label) => (
+                        <span class="font-mono text-[8px] text-neutral-400 h-3 text-center">
+                            {label}
+                        </span>
+                    ))
+                }
             </div>
+
+            <!-- Soundwave Grid for Mobile -->
+            <div
+                data-activity-grid-mobile
+                class="grid items-end w-full max-w-md"
+                style="grid-template-rows: 2rem; grid-auto-columns: minmax(8px, 1fr); grid-auto-flow: column; gap: 3px; min-height: 2rem;"
+            >
+                {
+                    weeks.slice(-4).map((week) =>
+                        week.map((day) => {
+                            const level = getHeightLevel(day.count, maxCount);
+                            // Mobile-specific heights
+                            const heightMap = [6, 10, 16, 22, 30]; 
+                            const barHeight = heightMap[level - 1] || 6;
+                            
+                            return (
+                                <div
+                                    data-activity-bar-mobile
+                                    class="w-full rounded-t-sm"
+                                    style={{
+                                        backgroundColor: `rgba(0, 0, 0, ${opacityScale[level]})`,
+                                        height: `${barHeight}px`,
+                                        minHeight: '4px',
+                                        transformOrigin: "bottom",
+                                        display: 'block',
+                                        visibility: 'visible',
+                                    }}
+                                    title={day.date ? `${day.count} combined contributions on ${day.date}` : undefined}
+                                />
+                            );
+                        })
+                    )
+                }
+            </div>
+        </div>
+
+        <div class="hidden sm:flex flex-col items-center w-full px-4">
+            <!-- Month Labels for Desktop -->
+            <div class="grid mb-2 w-full max-w-3xl" style={`grid-template-columns: repeat(${weeks.length}, 1fr); gap: 1px;`}>
+                {
+                    monthLabels.map((label) => (
+                        <span class="font-mono text-[8px] md:text-[9px] text-neutral-400 h-3 text-center">
+                            {label}
+                        </span>
+                    ))
+                }
+            </div>
+
+            <!-- Soundwave Grid for Desktop -->
+            <div
+                data-activity-grid-desktop
+                class="grid items-end w-full max-w-3xl"
+                style={`grid-template-rows: 2rem; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 1px; min-height: 2rem;`}
+            >
+                {
+                    weeks.map((week) =>
+                        week.map((day) => {
+                            const level = getHeightLevel(day.count, maxCount);
+                            const heightMap = [4, 8, 14, 20, 28];
+                            const barHeight = heightMap[level - 1] || 4;
+                            
+                            return (
+                                <div
+                                    data-activity-bar-desktop
+                                    class="w-full rounded-t-sm"
+                                    style={{
+                                        backgroundColor: `rgba(0, 0, 0, ${opacityScale[level]})`,
+                                        height: `${barHeight}px`,
+                                        minHeight: '3px',
+                                        transformOrigin: "bottom",
+                                        display: 'block',
+                                        visibility: 'visible',
+                                    }}
+                                    title={day.date ? `${day.count} combined contributions on ${day.date}` : undefined}
+                                />
+                            );
+                        })
+                    )
+                }
+            </div>
+        </div>
+
+        <!-- Legend (Shared) -->
+        <div class="flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3 mt-6 font-mono text-[8px] sm:text-[9px] md:text-[10px] text-neutral-400">
+            <span>less</span>
+            <div class="flex items-end gap-1 sm:gap-2 h-8">
+                {
+                    [4, 8, 14, 20, 28].map((height, i) => (
+                        <div
+                            class="w-1 sm:w-1.5 rounded-t-sm"
+                            style={{ 
+                                backgroundColor: `rgba(0, 0, 0, ${opacityScale[i]})`,
+                                height: `${height}px`
+                            }}
+                        />
+                    ))
+                }
+            </div>
+            <span>more</span>
         </div>
     </div>
 </section>
@@ -336,10 +386,18 @@ const monthLabels = weeks.map((week, i) => {
     const badges = section ? gsap.utils.toArray<HTMLElement>("[data-skill-badge]", section) : [];
 
     const activityLabel = section?.querySelector<HTMLElement>("[data-activity-el]");
-    const bars = section ? gsap.utils.toArray<HTMLElement>("[data-activity-bar]", section) : [];
+    
+    // Separate mobile and desktop bars
+    const mobileBars = section ? gsap.utils.toArray<HTMLElement>("[data-activity-bar-mobile]", section) : [];
+    const desktopBars = section ? gsap.utils.toArray<HTMLElement>("[data-activity-bar-desktop]", section) : [];
+    
+    // Determine which bars are visible
+    const isMobile = window.innerWidth < 640;
+    const bars = isMobile ? mobileBars : desktopBars;
 
     if (prefersReducedMotion) {
-        gsap.set([skillsLabel, activityLabel, ...categories, ...badges, ...bars], { opacity: 1, y: 0, scaleY: 1 });
+        gsap.set([skillsLabel, activityLabel, ...categories, ...badges], { opacity: 1, y: 0 });
+        gsap.set([...mobileBars, ...desktopBars], { opacity: 1, scaleY: 1 });
     } else {
         // --- Skills Animation ---
         if (skillsLabel) gsap.set(skillsLabel, { opacity: 0, y: 12 });
@@ -372,18 +430,73 @@ const monthLabels = weeks.map((week, i) => {
             });
         }
 
+        // Animate visible bars
         if (bars.length > 0) {
             gsap.set(bars, { scaleY: 0 });
             gsap.to(bars, {
-                scaleY: 1, duration: 0.6, ease: "power2.out", stagger: { each: 0.003, from: "start" },
-                scrollTrigger: { trigger: "#activity", start: "top 85%", once: true },
+                scaleY: 1, 
+                duration: 0.6, 
+                ease: "power2.out", 
+                stagger: { each: 0.005, from: "start" },
+                scrollTrigger: { 
+                    trigger: "#activity", 
+                    start: "top 85%", 
+                    once: true 
+                },
+                onComplete: () => {
+                    // Ensure all bars are visible
+                    bars.forEach(bar => {
+                        const element = bar as HTMLElement;
+                        element.style.transform = 'scaleY(1)';
+                        element.style.opacity = '1';
+                    });
+                }
             });
         }
     }
+
+    // Fallback for mobile: ensure bars are visible after animation
+    setTimeout(() => {
+        document.querySelectorAll<HTMLElement>('[data-activity-bar-mobile]').forEach(bar => {
+            const computedStyle = window.getComputedStyle(bar);
+            if (computedStyle.transform === 'none' || computedStyle.transform === 'matrix(1, 0, 0, 1, 0, 0)') {
+                bar.style.transform = 'scaleY(1)';
+                bar.style.opacity = '1';
+                bar.style.display = 'block';
+            }
+        });
+    }, 1000);
 </script>
 
 <style>
     [data-skills-el], [data-activity-el] {
         opacity: 1;
+    }
+
+    /* Ensure mobile bars are always visible */
+    [data-activity-bar-mobile] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: scaleY(1) !important;
+    }
+
+    [data-activity-bar-desktop] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: scaleY(1) !important;
+    }
+
+    /* Mobile grid fixes */
+    @media (max-width: 640px) {
+        [data-activity-grid-mobile] {
+            min-height: 2rem !important;
+            grid-template-rows: 2rem !important;
+        }
+        
+        [data-activity-grid-mobile] > div {
+            min-height: 4px !important;
+        }
     }
 </style>

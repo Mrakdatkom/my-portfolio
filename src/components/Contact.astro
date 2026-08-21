@@ -1,12 +1,6 @@
 ---
 // src/components/Contact.astro
 const email = "markryanzipagan3@gmail.com";
-
-const socials = [
-    { label: "online jobs ph", href: "https://v2.onlinejobs.ph/jobseekers/info/3463130" },
-];
-
-const year = new Date().getFullYear();
 ---
 
 <section
@@ -15,60 +9,28 @@ const year = new Date().getFullYear();
 >
     <span
         data-contact-el
-        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14"
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14 text-center md:text-left"
     >
         08 / contact
     </span>
 
-    <div data-contact-el class="max-w-4xl">
-        <p class="text-xl md:text-3xl tracking-tight text-neutral-500 mb-8 max-w-2xl leading-relaxed">
+    <div data-contact-el class="max-w-4xl mx-auto text-center md:text-left">
+        <p
+            class="text-xl md:text-3xl tracking-tight text-neutral-500 mb-8 max-w-2xl leading-relaxed mx-auto md:mx-0"
+        >
             Have a project in mind? Let's build something exceptional together.
         </p>
 
-        <!-- Email link with simple, clean underline hover -->
+        <!-- Email link: Added break-all, max-w-full, and responsive text sizing -->
         <a
             href={`mailto:${email}`}
-            class="group relative inline-block text-[10vw] sm:text-6xl md:text-7xl lg:text-8xl font-medium tracking-tight text-black pb-1 md:pb-2"
+            class="group relative inline-block max-w-full text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-black pb-4 md:pb-6 break-all"
         >
             {email}
             <!-- Animated underline -->
-            <span class="absolute bottom-0 left-0 h-[2px] md:h-[3px] bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
-        </a>
-    </div>
-
-    <!-- Footer -->
-    <div
-        data-contact-el
-        class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mt-24 md:mt-32 pt-8 border-t border-neutral-200"
-    >
-        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            {
-                socials.map((s) => (
-                    <a
-                        href={s.href}
-                        class="group relative inline-flex items-center gap-1 text-neutral-500 hover:text-black transition-colors duration-300"
-                    >
-                        {s.label} 
-                        <span class="text-xs">↗</span>
-                        <!-- Subtle underline for footer links too -->
-                        <span class="absolute -bottom-0.5 left-0 h-px bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
-                    </a>
-                ))
-            }
-        </div>
-
-        <span class="font-mono text-[11px] text-neutral-400 order-3 md:order-2">
-            © {year} Mark Ryan Zipagan
-        </span>
-
-        <a
-            href="#hero"
-            class="group order-2 md:order-3 relative inline-flex items-center gap-1.5 font-mono text-[11px] text-neutral-400 hover:text-black transition-colors duration-300"
-        >
-            <span>↑</span>
-            back to top
-            <!-- Subtle underline for back to top -->
-            <span class="absolute -bottom-0.5 left-0 h-px bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
+            <span
+                class="absolute bottom-2 md:bottom-3 left-0 h-0.5 md:h-0.75 bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"
+            ></span>
         </a>
     </div>
 </section>
@@ -98,10 +60,10 @@ const year = new Date().getFullYear();
             duration: 0.7,
             stagger: 0.1,
             ease: "power3.out",
-            scrollTrigger: { 
-                trigger: section, 
-                start: "top 80%", 
-                once: true 
+            scrollTrigger: {
+                trigger: section,
+                start: "top 80%",
+                once: true,
             },
         });
     }
