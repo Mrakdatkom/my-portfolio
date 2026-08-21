@@ -7,13 +7,50 @@ import "../styles/global.css";
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" href="/tab-profile.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="/tab-profile.jpg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Mark Ryan Zipagan</title>
-		<link rel="stylesheet" href="../styles/global.css" />
+		<!-- Note: The import at the top already handles this CSS, so this <link> tag is redundant and can be removed -->
 	</head>
 	<body>
-		<slot />
+		<div id="smooth-wrapper">
+			<div id="smooth-content">
+				<slot />
+			</div>
+		</div>
+
+		<script>
+			import { gsap } from "gsap";
+			import { ScrollSmoother } from "gsap/ScrollSmoother";
+
+			gsap.registerPlugin(ScrollSmoother);
+
+			// 1. Create the smoother instance ONCE globally
+			const smoother = ScrollSmoother.create({
+				smooth: 0.5,
+				effects: true,
+				smoothTouch: 0.1,
+			});
+
+			// Make it globally accessible
+			(window as any).__smoother = smoother;
+
+			// 2. Handle smooth scrolling for ALL anchor links on the page
+			document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+				anchor.addEventListener(
+					"click",
+					function (this: HTMLAnchorElement, e) {
+						e.preventDefault(); // Stop the default jumpy behavior
+
+						const targetId = this.getAttribute("href");
+						if (targetId && targetId !== "#") {
+							// Scroll smoothly, aligning the top of the target with the top of the viewport
+							smoother.scrollTo(targetId, true, "top top");
+						}
+					},
+				);
+			});
+		</script>
 	</body>
 </html>

@@ -3,7 +3,6 @@
 const email = "markryanzipagan3@gmail.com";
 
 const socials = [
-    { label: "github", href: "https://github.com/Mrakdatkom" },
     { label: "online jobs ph", href: "https://v2.onlinejobs.ph/jobseekers/info/3463130" },
 ];
 
@@ -21,46 +20,55 @@ const year = new Date().getFullYear();
         08 / contact
     </span>
 
-    <div data-contact-el class="max-w-3xl">
-        <p class="text-2xl md:text-4xl tracking-tight text-neutral-500 mb-6">
-            Have a project in mind? Let's build something.
+    <div data-contact-el class="max-w-4xl">
+        <p class="text-xl md:text-3xl tracking-tight text-neutral-500 mb-8 max-w-2xl leading-relaxed">
+            Have a project in mind? Let's build something exceptional together.
         </p>
 
+        <!-- Email link with simple, clean underline hover -->
         <a
             href={`mailto:${email}`}
-            data-magnetic
-            class="inline-block text-[9vw] sm:text-5xl md:text-6xl lg:text-7xl tracking-tight underline decoration-neutral-300 underline-offset-8 hover:decoration-black transition-colors duration-300"
+            class="group relative inline-block text-[10vw] sm:text-6xl md:text-7xl lg:text-8xl font-medium tracking-tight text-black pb-1 md:pb-2"
         >
             {email}
+            <!-- Animated underline -->
+            <span class="absolute bottom-0 left-0 h-[2px] md:h-[3px] bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
         </a>
     </div>
 
+    <!-- Footer -->
     <div
         data-contact-el
-        class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mt-20 md:mt-28 pt-8 border-t border-neutral-200"
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mt-24 md:mt-32 pt-8 border-t border-neutral-200"
     >
-        <div class="flex gap-4 text-sm">
+        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             {
                 socials.map((s) => (
                     <a
                         href={s.href}
-                        class="hover:opacity-60 transition-opacity"
+                        class="group relative inline-flex items-center gap-1 text-neutral-500 hover:text-black transition-colors duration-300"
                     >
-                        {s.label} ↗
+                        {s.label} 
+                        <span class="text-xs">↗</span>
+                        <!-- Subtle underline for footer links too -->
+                        <span class="absolute -bottom-0.5 left-0 h-px bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
                     </a>
                 ))
             }
         </div>
 
-        <span class="font-mono text-[11px] text-neutral-400">
+        <span class="font-mono text-[11px] text-neutral-400 order-3 md:order-2">
             © {year} Mark Ryan Zipagan
         </span>
 
         <a
             href="#hero"
-            class="font-mono text-[11px] text-neutral-400 hover:text-black transition-colors duration-200"
+            class="group order-2 md:order-3 relative inline-flex items-center gap-1.5 font-mono text-[11px] text-neutral-400 hover:text-black transition-colors duration-300"
         >
-            back to top ↑
+            <span>↑</span>
+            back to top
+            <!-- Subtle underline for back to top -->
+            <span class="absolute -bottom-0.5 left-0 h-px bg-black w-0 group-hover:w-full transition-all duration-300 ease-out"></span>
         </a>
     </div>
 </section>
@@ -75,7 +83,7 @@ const year = new Date().getFullYear();
         "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    const section = document.querySelector("#contact");
+    const section = document.querySelector<HTMLElement>("#contact");
     const els = section
         ? gsap.utils.toArray<HTMLElement>("[data-contact-el]", section)
         : [];
@@ -87,39 +95,14 @@ const year = new Date().getFullYear();
         gsap.to(els, {
             opacity: 1,
             y: 0,
-            duration: 0.6,
+            duration: 0.7,
             stagger: 0.1,
             ease: "power3.out",
-            scrollTrigger: { trigger: section, start: "top 80%", once: true },
-        });
-    }
-
-    // magnetic hover: only meaningful with a mouse, and skipped for reduced motion
-    const magnetic = section?.querySelector<HTMLElement>("[data-magnetic]");
-    const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
-
-    if (magnetic && hasFinePointer && !prefersReducedMotion) {
-        const strength = 0.25;
-        const moveX = gsap.quickTo(magnetic, "x", {
-            duration: 0.5,
-            ease: "power3.out",
-        });
-        const moveY = gsap.quickTo(magnetic, "y", {
-            duration: 0.5,
-            ease: "power3.out",
-        });
-
-        magnetic.addEventListener("mousemove", (e) => {
-            const rect = magnetic.getBoundingClientRect();
-            const relX = e.clientX - (rect.left + rect.width / 2);
-            const relY = e.clientY - (rect.top + rect.height / 2);
-            moveX(relX * strength);
-            moveY(relY * strength);
-        });
-
-        magnetic.addEventListener("mouseleave", () => {
-            moveX(0);
-            moveY(0);
+            scrollTrigger: { 
+                trigger: section, 
+                start: "top 80%", 
+                once: true 
+            },
         });
     }
 </script>
