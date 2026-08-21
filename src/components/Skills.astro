@@ -1,6 +1,7 @@
 ---
-// src/components/Skills.astro
+// src/components/Skills.astro (Combined with Activity)
 
+// 1. Import SVGs as inline components () to preserve original colors
 import js from "../assets/skills/javascript.svg";
 import ts from "../assets/skills/typescript.svg";
 import react from "../assets/skills/react.svg";
@@ -12,6 +13,7 @@ import laravel from "../assets/skills/laravel.svg";
 import html from "../assets/skills/html.svg";
 import vercel from "../assets/skills/vercel.svg";
 import googlesheets from "../assets/skills/googlesheets.svg";
+import googlecalendar from "../assets/skills/googlecalendar.svg";
 
 import figma from "../assets/skills/figma.svg";
 import git from "../assets/skills/git.svg";
@@ -23,99 +25,296 @@ import mysql from "../assets/skills/mysql.svg";
 import php from "../assets/skills/php.svg";
 import bootstrap from "../assets/skills/bootstrap.svg";
 import css from "../assets/skills/css.svg";
-import googlecalendar from "../assets/skills/googlecalendar.svg"
-import { Image } from "astro:assets";
 
-const rowA = [
-    {name: "JavaScript", icon: js},
-    {name: "TypeScript", icon: ts},
-    {name: "React", icon: react},
-    {name: "Astro", icon: astro},
-    {name: "Tailwind", icon: tailwind},
-    {name: "GSAP", icon: gsap},
-    {name: "Express", icon: express},
-    {name: "Laravel", icon: laravel},
-    {name: "HTML", icon: html},
-    {name: "Vercel", icon: vercel},
-    {name: "Google Sheets", icon: googlesheets},
+import vscode from "../assets/skills/vscode.svg";
+import wordpress from "../assets/skills/wordpress.svg";
+
+// 2. Group skills logically by use-case
+const skillCategories = [
+    {
+        title: "Frontend",
+        skills: [
+            { name: "JavaScript", icon: js },
+            { name: "TypeScript", icon: ts },
+            { name: "React", icon: react },
+            { name: "Astro", icon: astro },
+            { name: "Tailwind CSS", icon: tailwind },
+            { name: "GSAP", icon: gsap },
+            { name: "HTML5", icon: html },
+            { name: "CSS3", icon: css },
+            { name: "Bootstrap", icon: bootstrap },
+        ],
+    },
+    {
+        title: "Backend & Database",
+        skills: [
+            { name: "Express.js", icon: express },
+            { name: "Laravel", icon: laravel },
+            { name: "PHP", icon: php },
+            { name: "PostgreSQL", icon: postgresql },
+            { name: "MySQL", icon: mysql },
+        ],
+    },
+    {
+        title: "Tools & Workflow",
+        skills: [
+            { name: "Git", icon: git },
+            { name: "GitHub", icon: github },
+            { name: "Vite", icon: vite },
+            { name: "Vercel", icon: vercel },
+            { name: "Figma", icon: figma },
+            { name: "Postman", icon: postman },
+            { name: "Google Sheets", icon: googlesheets },
+            { name: "Google Calendar", icon: googlecalendar },
+            { name: "Visual Studio Code", icon: vscode },
+            { name: "WordPress", icon: wordpress },
+
+        ],
+    },
 ];
 
-const rowB = [
-    {name: "Figma", icon: figma},
-    {name: "Git", icon: git},
-    {name: "Github", icon: github},
-    {name: "Vite", icon: vite},
-    {name: "PostgreSQL", icon: postgresql}, 
-    {name: "Postman", icon: postman}, 
-    {name: "MySQL", icon: mysql},
-    {name: "PHP", icon: php},
-    {name: "Boostrap", icon: bootstrap},
-    {name: "CSS", icon: css},
-    {name: "Google Calendar", icon: googlecalendar},
-];
+// 3. GitHub Activity Data
+const GITHUB_USERNAMES = ["Mrakdatkom", "markryan3421"];
+const token = import.meta.env.GITHUB_TOKEN;
+
+type Day = { date: string; count: number };
+type WeekData = Day[];
+
+let weeks: WeekData[] = [];
+let combinedTotal = 0;
+let fetchFailed = false;
+
+const queryVariables: Record<string, string> = {};
+const queryFields = GITHUB_USERNAMES.map((username, index) => {
+    queryVariables[`login${index}`] = username;
+    return `
+      user${index}: user(login: $login${index}) {
+        contributionsCollection {
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    `;
+}).join("\n");
+
+const query = `
+  query (${GITHUB_USERNAMES.map((_, i) => `$login${i}: String!`).join(", ")}) {
+    ${queryFields}
+  }
+`;
+
+if (token) {
+    try {
+        const res = await fetch("https://api.github.com/graphql", {
+            method: "POST",
+            headers: {
+                Authorization: `bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query, variables: queryVariables }),
+        });
+
+        if (!res.ok) throw new Error(`GitHub API responded ${res.status}`);
+
+        const json = await res.json();
+        const baseCalendar = json?.data?.user0?.contributionsCollection?.contributionCalendar;
+
+        if (!baseCalendar) throw new Error("Unexpected GraphQL response shape");
+
+        weeks = baseCalendar.weeks.map((week: any, weekIndex: number) => {
+            return week.contributionDays.map((day: any) => {
+                let dailyCount = day.contributionCount;
+
+                for (let i = 1; i < GITHUB_USERNAMES.length; i++) {
+                    const otherCalendar = json?.data?.[`user${i}`]?.contributionsCollection?.contributionCalendar;
+                    if (otherCalendar) {
+                        const otherDay = otherCalendar.weeks[weekIndex].contributionDays.find((d: any) => d.date === day.date);
+                        if (otherDay) dailyCount += otherDay.contributionCount;
+                    }
+                }
+
+                combinedTotal += dailyCount;
+                return { date: day.date, count: dailyCount };
+            });
+        });
+    } catch (err) {
+        console.error("[Skills.astro] Failed to fetch GitHub data:", err);
+        fetchFailed = true;
+    }
+} else {
+    console.warn("[Skills.astro] GITHUB_TOKEN not set — rendering placeholder data.");
+    fetchFailed = true;
+}
+
+if (fetchFailed || weeks.length === 0) {
+    weeks = Array.from({ length: 52 }, () =>
+        Array.from({ length: 7 }, () => ({
+            date: "",
+            count: Math.random() < 0.35 ? 0 : Math.floor(Math.random() * 10),
+        }))
+    );
+    combinedTotal = weeks.flat().reduce((sum, d) => sum + d.count, 0);
+}
+
+function getHeightLevel(count: number, max: number) {
+    if (count === 0) return 1;
+    const ratio = count / Math.max(max, 1);
+    if (ratio < 0.25) return 2;
+    if (ratio < 0.5) return 3;
+    if (ratio < 0.75) return 4;
+    return 5;
+}
+
+const maxCount = Math.max(...weeks.flat().map((d) => d.count), 1);
+const heightScale = ["h-1", "h-2", "h-4", "h-6", "h-8"];
+const opacityScale = [0.15, 0.3, 0.5, 0.75, 1];
+
+const monthLabels = weeks.map((week, i) => {
+    if (!week[0]?.date) return "";
+    const date = new Date(week[0].date);
+    const prevDate = i > 0 && weeks[i - 1][0]?.date ? new Date(weeks[i - 1][0].date) : null;
+    const isNewMonth = !prevDate || date.getMonth() !== prevDate.getMonth();
+    return isNewMonth ? date.toLocaleString("en-US", { month: "short" }) : "";
+});
 ---
 
+<!-- COMBINED SECTION -->
 <section
     id="skills"
-    class="relative bg-white text-black py-24 md:py-32 border-t border-neutral-200"
+    class="relative bg-white text-black px-6 py-24 md:px-16 md:py-32 border-t border-neutral-200"
 >
+    <!-- Main Section Label -->
     <span
         data-skills-el
-        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14 px-6 md:px-16"
+        class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-14 text-center md:text-left"
     >
-        03 / skills
+        03 / skills & activity
     </span>
 
-    <div class="space-y-6 md:space-y-8">
-        <!-- Row A -->
-        <div class="relative border-y border-neutral-200 py-4 md:py-6 overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-            <div
-                data-marquee-track="a"
-                class="flex w-max items-center gap-8 md:gap-12 cursor-default"
+    <!-- PART 1: SKILLS GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12 max-w-6xl mx-auto mb-24 md:mb-32">
+        {
+            skillCategories.map((category) => (
+                <div data-skill-category class="flex flex-col items-center md:items-start">
+                    <h3 class="font-mono text-xs tracking-widest text-neutral-400 uppercase mb-5 pb-3 border-b border-neutral-200 w-full text-center md:text-left">
+                        {category.title}
+                    </h3>
+
+                    <!-- Badges Container (Centered on mobile, left-aligned on desktop) -->
+                    <div class="flex flex-wrap gap-3 justify-center md:justify-start">
+                        {
+                            category.skills.map((skill) => {
+                                const Icon = skill.icon;
+                                return (
+                                    <div
+                                        data-skill-badge
+                                        class="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl border border-neutral-200 bg-neutral-50 text-sm font-medium text-neutral-700 cursor-default"
+                                    >
+                                        <Icon class="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                                        <span>{skill.name}</span>
+                                    </div>
+                                );
+                            })
+                        }
+                    </div>
+                </div>
+            ))
+        }
+    </div>
+
+    <!-- Visual Divider -->
+    <div class="max-w-4xl mx-auto border-t border-neutral-200 mb-24 md:mb-32"></div>
+
+    <!-- PART 2: ACTIVITY GRAPH (Perfectly Centered) -->
+    <div id="activity" class="flex flex-col items-center w-full">
+        <span
+            data-activity-el
+            class="block font-mono text-[11px] tracking-wide text-neutral-400 mb-6 text-center"
+        >
+            github contributions
+        </span>
+
+        <div class="flex flex-col items-center mb-8 max-w-3xl w-full px-6">
+            <p class="text-sm text-neutral-500 mb-2 text-center">
+                {combinedTotal.toLocaleString()} combined contributions in the last year
+            </p>
+            <a
+                href={`https://github.com/Mrakdatkom`}
+                class="text-sm border-b border-black pb-0.5 inline-block hover:opacity-60 transition-opacity"
             >
-                {
-                    [...rowA, ...rowA].map((skill) => (
-                        <span class="flex items-center gap-3 md:gap-4 text-3xl md:text-5xl tracking-tight text-black select-none">
-                            <!-- Image/Icon Placeholder -->
-                            <span class="inline-flex items-center justify-center w-8 h-8 md:w-10 md:h-10 bg-neutral-100 rounded-full shrink-0 overflow-hidden">
-                                <img 
-                                    src={skill.icon.src} 
-                                    alt={skill.name}
-                                    class="w-5 h-5 md:w-6 md:h-6 object-contain"
-                                    loading="lazy"
-                                />
-                            </span>
-                            {skill.name}
-                            <span class="text-neutral-300" aria-hidden="true">/</span>
-                        </span>
-                    ))
-                }
-            </div>
+                view primary github ↗
+            </a>
         </div>
 
-        <!-- Row B -->
-        <div class="relative border-b border-neutral-200 py-4 md:py-6 overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-            <div
-                data-marquee-track="b"
-                class="flex w-max items-center gap-8 md:gap-12 cursor-default"
-            >
-                {
-                    [...rowB, ...rowB].map((skill) => (
-                        <span class="flex items-center gap-3 md:gap-4 text-3xl md:text-5xl tracking-tight text-neutral-400 select-none">
-                            <!-- Image/Icon Placeholder -->
-                            <span class="inline-flex items-center justify-center w-8 h-8 md:w-10 md:h-10  bg-neutral-100 rounded-full shrink-0 overflow-hidden">
-                                <img 
-                                    src={skill.icon.src} 
-                                    alt={skill.name}
-                                    class="w-5 h-5 md:w-6 md:h-6 object-contain"
-                                    loading="lazy"
-                                />
+        <div data-activity-grid-wrap class="w-full max-w-3xl overflow-x-auto flex justify-center">
+            <div class="min-w-[700px] w-full">
+                <!-- Month Labels -->
+                <div
+                    class="grid mb-2"
+                    style={`grid-template-columns: repeat(${weeks.length}, 1fr); gap: 2px;`}
+                >
+                    {
+                        monthLabels.map((label) => (
+                            <span class="font-mono text-[9px] text-neutral-400 h-3 text-center">
+                                {label}
                             </span>
-                            {skill.name}
-                            <span class="text-neutral-200" aria-hidden="true">/</span>
-                        </span>
-                    ))
-                }
+                        ))
+                    }
+                </div>
+
+                <!-- Soundwave Grid -->
+                <div
+                    data-activity-grid
+                    class="grid items-end"
+                    style={`grid-template-rows: 2rem; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 2px;`}
+                >
+                    {
+                        weeks.map((week) =>
+                            week.map((day) => {
+                                const level = getHeightLevel(day.count, maxCount);
+                                return (
+                                    <div
+                                        data-activity-bar
+                                        data-level={level}
+                                        class={`w-full rounded-t-sm ${heightScale[level]}`}
+                                        style={{
+                                            backgroundColor: `rgba(0, 0, 0, ${opacityScale[level]})`,
+                                            transformOrigin: "bottom",
+                                        }}
+                                        title={
+                                            day.date
+                                                ? `${day.count} combined contributions on ${day.date}`
+                                                : undefined
+                                        }
+                                    />
+                                );
+                            }),
+                        )
+                    }
+                </div>
+
+                <!-- Legend -->
+                <div class="flex items-center justify-center gap-3 mt-6 font-mono text-[10px] text-neutral-400">
+                    <span>less</span>
+                    <div class="flex items-end gap-2 h-8">
+                        {
+                            opacityScale.map((op, i) => (
+                                <div
+                                    class={`w-1.5 rounded-t-sm ${heightScale[i]}`}
+                                    style={{ backgroundColor: `rgba(0, 0, 0, ${op})` }}
+                                />
+                            ))
+                        }
+                    </div>
+                    <span>more</span>
+                </div>
             </div>
         </div>
     </div>
@@ -127,66 +326,64 @@ const rowB = [
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const trackA = document.querySelector<HTMLElement>('[data-marquee-track="a"]');
-    const trackB = document.querySelector<HTMLElement>('[data-marquee-track="b"]');
-    const label = document.querySelector<HTMLElement>("[data-skills-el]");
-    
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
 
-    // 1. Label animation
-    if (label) {
-        gsap.set(label, { opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 12 });
-        if (!prefersReducedMotion) {
-            gsap.to(label, {
-                opacity: 1,
-                y: 0,
-                duration: 0.6,
-                ease: "power3.out",
-                scrollTrigger: {
-                    trigger: "#skills",
-                    start: "top 80%",
-                    once: true,
-                },
+    const section = document.querySelector<HTMLElement>("#skills");
+    const skillsLabel = section?.querySelector<HTMLElement>("[data-skills-el]");
+    const categories = section ? gsap.utils.toArray<HTMLElement>("[data-skill-category]", section) : [];
+    const badges = section ? gsap.utils.toArray<HTMLElement>("[data-skill-badge]", section) : [];
+
+    const activityLabel = section?.querySelector<HTMLElement>("[data-activity-el]");
+    const bars = section ? gsap.utils.toArray<HTMLElement>("[data-activity-bar]", section) : [];
+
+    if (prefersReducedMotion) {
+        gsap.set([skillsLabel, activityLabel, ...categories, ...badges, ...bars], { opacity: 1, y: 0, scaleY: 1 });
+    } else {
+        // --- Skills Animation ---
+        if (skillsLabel) gsap.set(skillsLabel, { opacity: 0, y: 12 });
+        gsap.set(categories, { opacity: 0, y: 20 });
+        gsap.set(badges, { opacity: 0, y: 10, scale: 0.95 });
+
+        if (skillsLabel) {
+            gsap.to(skillsLabel, {
+                opacity: 1, y: 0, duration: 0.6, ease: "power3.out",
+                scrollTrigger: { trigger: section, start: "top 85%", once: true },
+            });
+        }
+
+        gsap.to(categories, {
+            opacity: 1, y: 0, duration: 0.7, stagger: 0.15, ease: "power3.out",
+            scrollTrigger: { trigger: section, start: "top 80%", once: true },
+        });
+
+        gsap.to(badges, {
+            opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.03, ease: "back.out(1.5)",
+            scrollTrigger: { trigger: section, start: "top 75%", once: true },
+        });
+
+        // --- Activity Animation ---
+        if (activityLabel) {
+            gsap.set(activityLabel, { opacity: 0, y: 12 });
+            gsap.to(activityLabel, {
+                opacity: 1, y: 0, duration: 0.6, ease: "power3.out",
+                scrollTrigger: { trigger: "#activity", start: "top 85%", once: true },
+            });
+        }
+
+        if (bars.length > 0) {
+            gsap.set(bars, { scaleY: 0 });
+            gsap.to(bars, {
+                scaleY: 1, duration: 0.6, ease: "power2.out", stagger: { each: 0.003, from: "start" },
+                scrollTrigger: { trigger: "#activity", start: "top 85%", once: true },
             });
         }
     }
-
-    // 2. Marquee logic with seamless loop AND hover pause
-    function initMarquee(track: HTMLElement | null, direction: 1 | -1, duration: number) {
-        if (!track || prefersReducedMotion) return;
-
-        // direction 1 = moves left (0% to -50%)
-        // direction -1 = moves right (-50% to 0%)
-        const startX = direction === 1 ? 0 : -50;
-        const endX = direction === 1 ? -50 : 0;
-
-        gsap.set(track, { xPercent: startX });
-
-        // Store the tween instance so we can control its timeScale
-        const tween = gsap.to(track, {
-            xPercent: endX,
-            duration: duration,
-            ease: "none",
-            repeat: -1,
-        });
-
-        // Smoothly pause on hover
-        track.addEventListener("mouseenter", () => {
-            gsap.to(tween, { timeScale: 0, duration: 0.4, ease: "power2.out" });
-        });
-
-        // Smoothly resume on leave
-        track.addEventListener("mouseleave", () => {
-            gsap.to(tween, { timeScale: 1, duration: 0.4, ease: "power2.out" });
-        });
-    }
-
-    initMarquee(trackA, 1, 25);
-    initMarquee(trackB, -1, 30);
 </script>
 
 <style>
-    [data-skills-el] {
+    [data-skills-el], [data-activity-el] {
         opacity: 1;
     }
 </style>
